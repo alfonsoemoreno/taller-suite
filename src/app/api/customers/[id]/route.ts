@@ -3,6 +3,8 @@ import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { CustomerUpdateSchema } from '@/shared';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } },

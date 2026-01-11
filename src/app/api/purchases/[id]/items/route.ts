@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { PurchaseItemCreateSchema } from '@/shared';
 import type { Prisma } from '@prisma/client';
 
+export const runtime = 'nodejs';
+
 type SessionUser = { id: string; role: string; tenantId: string | null };
 
 function requireSession(sessionUser: SessionUser | undefined) {

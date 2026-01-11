@@ -1,15 +1,22 @@
-import { createRequire } from 'node:module';
+import { PrismaClient } from '../../prisma/generated/client';
+import { PrismaNeon } from '@prisma/adapter-neon';
+import { neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
 
-process.env.PRISMA_CLIENT_ENGINE_TYPE = 'binary';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not set.');
+}
 
-const require = createRequire(import.meta.url);
-const { PrismaClient } = require('@prisma/client') as typeof import('@prisma/client');
+neonConfig.webSocketConstructor = ws;
+const adapter = new PrismaNeon({ connectionString });
 
 const globalForPrisma = global as typeof global & { prisma?: PrismaClient };
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   });
 

@@ -4,6 +4,8 @@ import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { UserResetPasswordSchema } from '@/shared';
 
+export const runtime = 'nodejs';
+
 function ensureTenant(sessionUser: { tenantId: string | null; role: string }) {
   if (!sessionUser.tenantId) {
     return NextResponse.json(

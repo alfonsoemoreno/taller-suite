@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { VehicleLookupRequestSchema, normalizePlate } from '@/shared';
 import type { Prisma } from '@prisma/client';
 
+export const runtime = 'nodejs';
+
 const CACHE_TTL_DAYS = 30;
 
 export async function POST(request: Request) {

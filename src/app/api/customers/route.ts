@@ -3,6 +3,8 @@ import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { CustomerCreateSchema } from '@/shared';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   const session = await getAuthSession();
   if (!session?.user) {

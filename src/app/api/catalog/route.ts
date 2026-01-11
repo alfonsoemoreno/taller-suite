@@ -3,6 +3,8 @@ import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { CatalogItemCreateSchema } from '@/shared';
 
+export const runtime = 'nodejs';
+
 type SessionUser = { id: string; role: string; tenantId: string | null };
 
 function requireSession(sessionUser: SessionUser | undefined) {

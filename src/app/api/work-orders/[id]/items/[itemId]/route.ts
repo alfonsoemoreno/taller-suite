@@ -12,6 +12,8 @@ import {
 } from '@/lib/work-orders';
 import { WorkOrderItemUpdateSchema } from '@/shared';
 
+export const runtime = 'nodejs';
+
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });

@@ -17,7 +17,9 @@ const jwksUrl = process.env.NEON_AUTH_JWKS_URL;
 const issuer = process.env.NEON_AUTH_ISSUER;
 
 export async function getAuthSession(): Promise<AuthSession | null> {
-  const authHeader = headers().get('authorization') ?? headers().get('Authorization');
+  const requestHeaders = await headers();
+  const authHeader =
+    requestHeaders.get('authorization') ?? requestHeaders.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
   }

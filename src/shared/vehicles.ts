@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isValidChileanPlate } from './plate.js';
+import { isValidChileanPlate } from './plate';
 
 const MAX_YEAR = new Date().getFullYear() + 1;
 const YearSchema = z

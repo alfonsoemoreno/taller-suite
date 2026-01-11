@@ -187,7 +187,7 @@ function AppSidebar() {
             <ListItemButton
               key={item.label}
               component={item.to ? Link : 'div'}
-              href={item.to ?? ''}
+              href={item.to ?? undefined}
               selected={selected}
               disabled={item.disabled}
               sx={{

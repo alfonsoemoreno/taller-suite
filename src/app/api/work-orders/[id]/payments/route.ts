@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { PaymentCreateSchema, PaymentStatusSchema } from '@/shared';
 import { findWorkOrder, type SessionUser } from '@/lib/work-orders';
 
+export const runtime = 'nodejs';
+
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });

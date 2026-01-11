@@ -3,6 +3,8 @@ import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { VehicleUpdateSchema, normalizePlate } from '@/shared';
 
+export const runtime = 'nodejs';
+
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } },

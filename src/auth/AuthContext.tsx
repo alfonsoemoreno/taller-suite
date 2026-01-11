@@ -36,17 +36,35 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
       const client = authClient as unknown as {
         getSession?: () => Promise<unknown>;
         session?: () => Promise<unknown>;
+        getJWTToken?: () => Promise<string | null>;
       };
       const sessionResponse =
         (await client.getSession?.()) ?? (await client.session?.());
-      const wrapped = sessionResponse as
-        | { data?: { session?: { access_token?: string } } }
-        | { session?: { access_token?: string } }
+      const sessionWrapped = sessionResponse as
+        | { data?: { session?: Record<string, unknown> } }
+        | { session?: Record<string, unknown> }
+        | Record<string, unknown>
         | undefined;
+      const sessionData =
+        (sessionWrapped as { data?: { session?: Record<string, unknown> } })
+          ?.data?.session ??
+        (sessionWrapped as { session?: Record<string, unknown> })?.session ??
+        (sessionWrapped as Record<string, unknown> | undefined);
+
       let token =
-        wrapped?.data?.session?.access_token ??
-        wrapped?.session?.access_token ??
+        (sessionData as { access_token?: string })?.access_token ??
+        (sessionData as { accessToken?: string })?.accessToken ??
+        (sessionData as { token?: string })?.token ??
+        (sessionData as { idToken?: { token?: string } })?.idToken?.token ??
         null;
+
+      if (!token && client.getJWTToken) {
+        try {
+          token = (await client.getJWTToken()) ?? null;
+        } catch {
+          token = null;
+        }
+      }
       if (!token) {
         const baseUrl = process.env.NEXT_PUBLIC_NEON_AUTH_URL ?? '';
         if (baseUrl) {
