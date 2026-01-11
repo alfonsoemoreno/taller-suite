@@ -31,15 +31,13 @@ export class AuthService {
   }
 
   private get accessTtl(): JwtSignOptions['expiresIn'] {
-    return (
-      this.configService.get<string>('JWT_ACCESS_TTL') ?? DEFAULT_ACCESS_TTL
-    ) as JwtSignOptions['expiresIn'];
+    return (this.configService.get<string>('JWT_ACCESS_TTL') ??
+      DEFAULT_ACCESS_TTL) as JwtSignOptions['expiresIn'];
   }
 
   private get refreshTtl(): JwtSignOptions['expiresIn'] {
-    return (
-      this.configService.get<string>('JWT_REFRESH_TTL') ?? DEFAULT_REFRESH_TTL
-    ) as JwtSignOptions['expiresIn'];
+    return (this.configService.get<string>('JWT_REFRESH_TTL') ??
+      DEFAULT_REFRESH_TTL) as JwtSignOptions['expiresIn'];
   }
 
   private get saltRounds() {

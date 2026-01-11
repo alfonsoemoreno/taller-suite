@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { CatalogItemCreate, CatalogItemUpdate } from '@taller/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AccessTokenPayload } from '../auth/auth.types';
@@ -47,9 +51,9 @@ export class CatalogService {
       where: { id: item.id },
       data: {
         type: data.type ?? item.type,
-        sku: data.sku === '' ? null : data.sku ?? item.sku,
+        sku: data.sku === '' ? null : (data.sku ?? item.sku),
         name: data.name ?? item.name,
-        brand: data.brand === '' ? null : data.brand ?? item.brand,
+        brand: data.brand === '' ? null : (data.brand ?? item.brand),
         unit: data.unit ?? item.unit,
         salePriceCents: data.salePriceCents ?? item.salePriceCents,
         costCents: data.costCents ?? item.costCents,

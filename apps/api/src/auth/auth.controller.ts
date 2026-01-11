@@ -18,9 +18,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  login(
-    @Body(new ZodValidationPipe(LoginRequestSchema)) body: LoginRequest,
-  ) {
+  login(@Body(new ZodValidationPipe(LoginRequestSchema)) body: LoginRequest) {
     return this.authService.login(body.email, body.password);
   }
 

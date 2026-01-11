@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "WorkOrder" ADD COLUMN     "costTotalCents" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "marginCents" INTEGER NOT NULL DEFAULT 0;

@@ -82,7 +82,8 @@ export class WorkOrdersController {
   addItem(
     @CurrentUser() user: AccessTokenPayload,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(WorkOrderItemCreateSchema)) body: WorkOrderItemCreate,
+    @Body(new ZodValidationPipe(WorkOrderItemCreateSchema))
+    body: WorkOrderItemCreate,
   ) {
     return this.workOrdersService.addItem(user, id, body);
   }
@@ -92,7 +93,8 @@ export class WorkOrdersController {
     @CurrentUser() user: AccessTokenPayload,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
-    @Body(new ZodValidationPipe(WorkOrderItemUpdateSchema)) body: WorkOrderItemUpdate,
+    @Body(new ZodValidationPipe(WorkOrderItemUpdateSchema))
+    body: WorkOrderItemUpdate,
   ) {
     return this.workOrdersService.updateItem(user, id, itemId, body);
   }
@@ -115,7 +117,8 @@ export class WorkOrdersController {
   addNote(
     @CurrentUser() user: AccessTokenPayload,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(WorkOrderNoteCreateSchema)) body: WorkOrderNoteCreate,
+    @Body(new ZodValidationPipe(WorkOrderNoteCreateSchema))
+    body: WorkOrderNoteCreate,
   ) {
     return this.workOrdersService.addNote(user, id, body);
   }

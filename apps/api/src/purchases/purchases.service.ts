@@ -97,7 +97,9 @@ export class PurchasesService {
       throw new BadRequestException('Compra recibida no es editable');
     }
     await this.prisma.$transaction(async (tx) => {
-      await tx.purchaseItem.deleteMany({ where: { id: itemId, purchaseId: id } });
+      await tx.purchaseItem.deleteMany({
+        where: { id: itemId, purchaseId: id },
+      });
       await this.recalculateTotal(tx, purchase.id);
     });
     return { ok: true };
@@ -140,7 +142,10 @@ export class PurchasesService {
     });
   }
 
-  private async recalculateTotal(tx: Prisma.TransactionClient, purchaseId: string) {
+  private async recalculateTotal(
+    tx: Prisma.TransactionClient,
+    purchaseId: string,
+  ) {
     const totals = await tx.purchaseItem.aggregate({
       where: { purchaseId },
       _sum: { lineTotalCents: true },

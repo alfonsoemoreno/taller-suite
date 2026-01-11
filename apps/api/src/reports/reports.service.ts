@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AccessTokenPayload } from '../auth/auth.types';
 import { PaymentMethodSchema } from '@taller/shared';
@@ -27,7 +31,9 @@ export class ReportsService {
     this.ensureReportsAccess(user);
     const range = this.resolveRange(from, to);
     const { start, end } = this.dateRange(range.from, range.to);
-    const parsedMethod = method ? PaymentMethodSchema.safeParse(method) : undefined;
+    const parsedMethod = method
+      ? PaymentMethodSchema.safeParse(method)
+      : undefined;
     if (method && !parsedMethod?.success) {
       throw new BadRequestException('Método inválido');
     }
@@ -48,7 +54,10 @@ export class ReportsService {
       },
     });
 
-    const salesCents = payments.reduce((acc, payment) => acc + payment.amountCents, 0);
+    const salesCents = payments.reduce(
+      (acc, payment) => acc + payment.amountCents,
+      0,
+    );
 
     const orders = await this.prisma.workOrder.findMany({
       where: {
@@ -68,7 +77,8 @@ export class ReportsService {
       orders.length === 0
         ? 0
         : Math.round(
-            orders.reduce((acc, order) => acc + order.totalCents, 0) / orders.length,
+            orders.reduce((acc, order) => acc + order.totalCents, 0) /
+              orders.length,
           );
 
     const groupedStatus = await this.prisma.workOrder.groupBy({
@@ -115,7 +125,8 @@ export class ReportsService {
       throw new BadRequestException('Rango inválido');
     }
     const end = to ?? today;
-    const startDate = from ?? this.formatDate(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000));
+    const startDate =
+      from ?? this.formatDate(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000));
     return { from: startDate, to: end };
   }
 
@@ -159,7 +170,10 @@ export class ReportsService {
   ) {
     const map = new Map<string, number>();
     for (const payment of payments) {
-      map.set(payment.method, (map.get(payment.method) ?? 0) + payment.amountCents);
+      map.set(
+        payment.method,
+        (map.get(payment.method) ?? 0) + payment.amountCents,
+      );
     }
     return Array.from(map.entries()).map(([method, totalCents]) => ({
       method,

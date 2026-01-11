@@ -33,6 +33,7 @@ export type WorkOrderUpdate = z.infer<typeof WorkOrderUpdateSchema>;
 
 export const WorkOrderItemCreateSchema = z.object({
   type: WorkOrderItemTypeSchema,
+  catalogItemId: z.string().optional(),
   name: z.string().min(1),
   qty: z.number().int().min(1),
   unitPriceCents: z.number().int().min(0),

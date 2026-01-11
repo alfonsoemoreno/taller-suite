@@ -235,6 +235,8 @@ export function PurchasesPage() {
     await loadPurchases();
   };
 
+  const filteredPurchases = purchases;
+
 
   return (
     <Box>

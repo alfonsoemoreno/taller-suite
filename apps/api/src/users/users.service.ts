@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { UserCreate, UserResetPassword, UserUpdate } from '@taller/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AccessTokenPayload } from '../auth/auth.types';
@@ -25,7 +30,9 @@ export class UsersService {
 
   async create(user: AccessTokenPayload, data: UserCreate) {
     this.ensureAdmin(user);
-    const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
     if (existing) {
       throw new BadRequestException('Email ya registrado');
     }
@@ -72,7 +79,11 @@ export class UsersService {
     });
   }
 
-  async resetPassword(user: AccessTokenPayload, id: string, data: UserResetPassword) {
+  async resetPassword(
+    user: AccessTokenPayload,
+    id: string,
+    data: UserResetPassword,
+  ) {
     this.ensureAdmin(user);
     const target = await this.prisma.user.findFirst({
       where: { id, tenantId: user.tenantId },

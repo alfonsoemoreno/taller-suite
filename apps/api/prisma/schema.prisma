@@ -169,6 +169,8 @@ model WorkOrder {
   totalCents  Int             @default(0)
   paidTotalCents Int          @default(0)
   balanceCents Int            @default(0)
+  costTotalCents Int          @default(0)
+  marginCents    Int          @default(0)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 

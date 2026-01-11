@@ -1,4 +1,8 @@
-import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -60,8 +64,14 @@ export class GetApiService {
       throw new BadGatewayException('Error consultando GetAPI');
     }
 
-    const data = await response.json();
-    const normalizedResponse = this.normalizeResponse(normalizedPlate, data);
+    const rawData: unknown = await response.json();
+    if (!rawData || typeof rawData !== 'object') {
+      throw new BadGatewayException('Respuesta inválida de GetAPI');
+    }
+    const normalizedResponse = this.normalizeResponse(
+      normalizedPlate,
+      rawData as Record<string, unknown>,
+    );
 
     await this.prisma.vehicleLookupCache.upsert({
       where: { plate: normalizedPlate },
@@ -168,28 +178,19 @@ export class GetApiService {
           ['data', 'model', 'name'],
           ['data', 'version'],
         ]) ?? null,
-      year:
-        typeof year === 'number' && !Number.isNaN(year) ? year : null,
+      year: typeof year === 'number' && !Number.isNaN(year) ? year : null,
       fuel: pick([['fuel'], ['data', 'fuel']]) ?? null,
-      transmission:
-        pick([['transmission'], ['data', 'transmission']]) ?? null,
+      transmission: pick([['transmission'], ['data', 'transmission']]) ?? null,
       typeVehicle:
         pick([['typeVehicle'], ['data', 'model', 'typeVehicle', 'name']]) ??
         null,
-      doors:
-        typeof doors === 'number' && !Number.isNaN(doors) ? doors : null,
+      doors: typeof doors === 'number' && !Number.isNaN(doors) ? doors : null,
       version: pick([['version'], ['data', 'version']]) ?? null,
       mileage:
-        typeof mileage === 'number' && !Number.isNaN(mileage)
-          ? mileage
-          : null,
+        typeof mileage === 'number' && !Number.isNaN(mileage) ? mileage : null,
       vin:
-        pick([
-          ['vin'],
-          ['vin_number'],
-          ['nro_vin'],
-          ['data', 'vinNumber'],
-        ]) ?? null,
+        pick([['vin'], ['vin_number'], ['nro_vin'], ['data', 'vinNumber']]) ??
+        null,
       engineNo:
         pick([
           ['engineNo'],
@@ -199,12 +200,8 @@ export class GetApiService {
           ['data', 'engineNumber'],
         ]) ?? null,
       color:
-        pick([
-          ['color'],
-          ['colour'],
-          ['color_name'],
-          ['data', 'color'],
-        ]) ?? null,
+        pick([['color'], ['colour'], ['color_name'], ['data', 'color']]) ??
+        null,
       raw: safeRaw,
     };
   }

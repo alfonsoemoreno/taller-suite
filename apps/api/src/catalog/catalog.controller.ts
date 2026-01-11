@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   CatalogItemCreateSchema,
   CatalogItemUpdateSchema,
@@ -22,7 +30,8 @@ export class CatalogController {
   @Post()
   create(
     @CurrentUser() user: AccessTokenPayload,
-    @Body(new ZodValidationPipe(CatalogItemCreateSchema)) body: CatalogItemCreate,
+    @Body(new ZodValidationPipe(CatalogItemCreateSchema))
+    body: CatalogItemCreate,
   ) {
     return this.catalogService.create(user, body);
   }
@@ -31,7 +40,8 @@ export class CatalogController {
   update(
     @CurrentUser() user: AccessTokenPayload,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(CatalogItemUpdateSchema)) body: CatalogItemUpdate,
+    @Body(new ZodValidationPipe(CatalogItemUpdateSchema))
+    body: CatalogItemUpdate,
   ) {
     return this.catalogService.update(user, id, body);
   }

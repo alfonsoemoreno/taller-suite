@@ -10,7 +10,6 @@ import {
   DialogTitle,
   MenuItem,
   Stack,
-  Switch,
   TableCell,
   TableRow,
   TextField,

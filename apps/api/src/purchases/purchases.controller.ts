@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   PurchaseCreateSchema,
   PurchaseItemCreateSchema,
@@ -47,7 +55,8 @@ export class PurchasesController {
   addItem(
     @CurrentUser() user: AccessTokenPayload,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(PurchaseItemCreateSchema)) body: PurchaseItemCreate,
+    @Body(new ZodValidationPipe(PurchaseItemCreateSchema))
+    body: PurchaseItemCreate,
   ) {
     return this.purchasesService.addItem(user, id, body);
   }

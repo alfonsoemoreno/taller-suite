@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { Request } from 'express';
 import type { AccessTokenPayload } from '../auth.types';
+
+type AuthenticatedRequest = Request & { user?: AccessTokenPayload };
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
@@ -16,14 +19,14 @@ export class AccessTokenGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const authHeader =
-      request.headers?.authorization ?? request.headers?.Authorization;
-    if (!authHeader || typeof authHeader !== 'string') {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const headerValue =
+      request.get('authorization') ?? request.get('Authorization');
+    if (!headerValue) {
       throw new UnauthorizedException('Missing Authorization header');
     }
 
-    const [type, token] = authHeader.split(' ');
+    const [type, token] = headerValue.split(' ');
     if (type !== 'Bearer' || !token) {
       throw new UnauthorizedException('Invalid Authorization header');
     }

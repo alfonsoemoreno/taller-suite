@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import type { CashCloseCreate } from '@taller/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AccessTokenPayload } from '../auth/auth.types';
@@ -66,7 +70,10 @@ export class CashCloseService {
     });
   }
 
-  private async computeTotals(user: AccessTokenPayload, date: string): Promise<Totals> {
+  private async computeTotals(
+    user: AccessTokenPayload,
+    date: string,
+  ): Promise<Totals> {
     const { start, end } = this.dateRange(date);
     const payments = await this.prisma.payment.findMany({
       where: {
@@ -91,7 +98,8 @@ export class CashCloseService {
     for (const payment of payments) {
       if (payment.method === 'CASH') totals.cashInCents += payment.amountCents;
       if (payment.method === 'CARD') totals.cardInCents += payment.amountCents;
-      if (payment.method === 'TRANSFER') totals.transferInCents += payment.amountCents;
+      if (payment.method === 'TRANSFER')
+        totals.transferInCents += payment.amountCents;
     }
 
     return totals;

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -44,44 +45,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async (): Promise<string | null> => {
-    const refreshToken = getStoredRefreshToken();
-    if (!refreshToken) {
-      setUser(null);
-      setAccessToken(null);
-      return null;
+    try {
+      const refreshToken = getStoredRefreshToken();
+      if (!refreshToken) {
+        setUser(null);
+        setAccessToken(null);
+        return null;
+      }
+
+      const payload = RefreshRequestSchema.safeParse({ refreshToken });
+      if (!payload.success) {
+        setStoredRefreshToken(null);
+        setUser(null);
+        setAccessToken(null);
+        return null;
+      }
+
+      const response = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload.data),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        setStoredRefreshToken(null);
+        setUser(null);
+        setAccessToken(null);
+        return null;
+      }
+
+      const data = await response.json();
+      setAccessToken(data.accessToken);
+      setStoredRefreshToken(data.refreshToken);
+      setUser(data.user ?? null);
+      return data.accessToken ?? null;
+    } finally {
+      setIsLoading(false);
     }
-
-    const payload = RefreshRequestSchema.safeParse({ refreshToken });
-    if (!payload.success) {
-      setStoredRefreshToken(null);
-      setUser(null);
-      setAccessToken(null);
-      return null;
-    }
-
-    const response = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload.data),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      setStoredRefreshToken(null);
-      setUser(null);
-      setAccessToken(null);
-      return null;
-    }
-
-    const data = await response.json();
-    setAccessToken(data.accessToken);
-    setStoredRefreshToken(data.refreshToken);
-    setUser(data.user ?? null);
-    return data.accessToken ?? null;
   }, []);
 
   useEffect(() => {
-    refresh().finally(() => setIsLoading(false));
+    void refresh();
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {

@@ -50,6 +50,7 @@ type Vehicle = {
 type WorkOrderItem = {
   id: string;
   type: WorkOrderItemType;
+  catalogItemId?: string | null;
   name: string;
   qty: number;
   unitPriceCents: number;
@@ -66,6 +67,8 @@ type WorkOrder = {
   totalCents: number;
   paidTotalCents?: number;
   balanceCents?: number;
+  costTotalCents?: number;
+  marginCents?: number;
   createdAt: string;
   customer: Customer;
   vehicle?: Vehicle | null;
@@ -134,12 +137,16 @@ export function WorkOrderDetailPage() {
   const [editingItem, setEditingItem] = useState<WorkOrderItem | null>(null);
   const [itemForm, setItemForm] = useState({
     type: 'LABOR' as WorkOrderItemType,
+    catalogItemId: '',
     name: '',
     qty: '1',
     unitPriceCents: '',
   });
   const [itemError, setItemError] = useState<string | null>(null);
   const [isItemSaving, setIsItemSaving] = useState(false);
+  const [catalogItems, setCatalogItems] = useState<
+    Array<{ id: string; name: string; salePriceCents: number }>
+  >([]);
 
   usePageTitle(order ? `OT: ${order.customer.name}` : 'Orden de trabajo');
 
@@ -168,9 +175,21 @@ export function WorkOrderDetailPage() {
     }
   };
 
+  const loadCatalog = async () => {
+    try {
+      const data = await apiFetch<
+        Array<{ id: string; name: string; salePriceCents: number; type: string; isActive: boolean }>
+      >('/catalog');
+      setCatalogItems(data.filter((item) => item.type === 'PART' && item.isActive));
+    } catch {
+      setCatalogItems([]);
+    }
+  };
+
   useEffect(() => {
     loadOrder();
     loadNotes();
+    loadCatalog();
   }, [id]);
 
   const handleStatusChange = async (value: WorkOrderStatus) => {
@@ -189,7 +208,13 @@ export function WorkOrderDetailPage() {
 
   const openCreateItem = (type: WorkOrderItemType) => {
     setEditingItem(null);
-    setItemForm({ type, name: '', qty: '1', unitPriceCents: '' });
+    setItemForm({
+      type,
+      catalogItemId: '',
+      name: '',
+      qty: '1',
+      unitPriceCents: '',
+    });
     setItemError(null);
     setIsItemDialogOpen(true);
   };
@@ -198,6 +223,7 @@ export function WorkOrderDetailPage() {
     setEditingItem(item);
     setItemForm({
       type: item.type,
+      catalogItemId: item.catalogItemId ?? '',
       name: item.name,
       qty: String(item.qty),
       unitPriceCents: String(item.unitPriceCents),
@@ -211,6 +237,7 @@ export function WorkOrderDetailPage() {
   const itemPayload = useMemo(() => {
     return {
       type: itemForm.type,
+      catalogItemId: itemForm.catalogItemId || undefined,
       name: itemForm.name.trim(),
       qty: Number(itemForm.qty),
       unitPriceCents: Number(itemForm.unitPriceCents),
@@ -409,6 +436,20 @@ export function WorkOrderDetailPage() {
               sx={{ minWidth: 220 }}
             />
           </FormRow>
+          <FormRow>
+            <TextField
+              label="Costo estimado"
+              value={formatCurrency(order.costTotalCents ?? 0)}
+              InputProps={{ readOnly: true }}
+              sx={{ minWidth: 220 }}
+            />
+            <TextField
+              label="Margen estimado"
+              value={formatCurrency(order.marginCents ?? 0)}
+              InputProps={{ readOnly: true }}
+              sx={{ minWidth: 220 }}
+            />
+          </FormRow>
           <Typography variant="subtitle2">Descripción / diagnóstico</Typography>
           <Typography variant="body2" color="text.secondary">
             {order.description || 'Sin descripción'}
@@ -530,6 +571,8 @@ export function WorkOrderDetailPage() {
                   setItemForm((prev) => ({
                     ...prev,
                     type: event.target.value as WorkOrderItemType,
+                    catalogItemId:
+                      event.target.value === 'PART' ? prev.catalogItemId : '',
                   }))
                 }
                 fullWidth
@@ -540,6 +583,33 @@ export function WorkOrderDetailPage() {
                   </MenuItem>
                 ))}
               </TextField>
+              {itemForm.type === 'PART' && (
+                <TextField
+                  select
+                  label="Repuesto"
+                  value={itemForm.catalogItemId}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    const match = catalogItems.find((item) => item.id === value);
+                    setItemForm((prev) => ({
+                      ...prev,
+                      catalogItemId: value,
+                      name: match?.name ?? prev.name,
+                      unitPriceCents: match
+                        ? String(match.salePriceCents)
+                        : prev.unitPriceCents,
+                    }));
+                  }}
+                  fullWidth
+                >
+                  <MenuItem value="">Selecciona un repuesto</MenuItem>
+                  {catalogItems.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
               <TextField
                 label="Detalle"
                 value={itemForm.name}

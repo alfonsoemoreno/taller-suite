@@ -42,7 +42,8 @@ export class UsersController {
   resetPassword(
     @CurrentUser() user: AccessTokenPayload,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(UserResetPasswordSchema)) body: UserResetPassword,
+    @Body(new ZodValidationPipe(UserResetPasswordSchema))
+    body: UserResetPassword,
   ) {
     return this.usersService.resetPassword(user, id, body);
   }

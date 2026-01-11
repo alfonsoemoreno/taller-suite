@@ -37,9 +37,9 @@ export class SuppliersService {
       where: { id: supplier.id },
       data: {
         name: data.name ?? supplier.name,
-        email: data.email === '' ? null : data.email ?? supplier.email,
-        phone: data.phone === '' ? null : data.phone ?? supplier.phone,
-        notes: data.notes === '' ? null : data.notes ?? supplier.notes,
+        email: data.email === '' ? null : (data.email ?? supplier.email),
+        phone: data.phone === '' ? null : (data.phone ?? supplier.phone),
+        notes: data.notes === '' ? null : (data.notes ?? supplier.notes),
       },
     });
   }

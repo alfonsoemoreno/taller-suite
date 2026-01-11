@@ -10,10 +10,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get('work-orders/:id/payments')
-  list(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param('id') id: string,
-  ) {
+  list(@CurrentUser() user: AccessTokenPayload, @Param('id') id: string) {
     return this.paymentsService.listByWorkOrder(user, id);
   }
 

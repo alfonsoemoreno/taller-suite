@@ -94,7 +94,11 @@ export class WorkOrdersService {
       await this.ensureCustomer(user, data.customerId);
     }
     if (data.vehicleId) {
-      await this.ensureVehicle(user, data.vehicleId, data.customerId ?? order.customerId);
+      await this.ensureVehicle(
+        user,
+        data.vehicleId,
+        data.customerId ?? order.customerId,
+      );
     }
 
     return this.prisma.workOrder.update({
@@ -166,16 +170,24 @@ export class WorkOrdersService {
   ) {
     const order = await this.getWorkOrder(user, id);
     this.ensureItemEditable(user, order.status);
+    if (data.catalogItemId && data.type !== 'PART') {
+      throw new BadRequestException('Solo repuestos pueden usar catálogo');
+    }
     const lineTotal = data.qty * data.unitPriceCents;
     if (lineTotal < 0) {
       throw new BadRequestException('Montos invalidos');
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
+      if (data.catalogItemId) {
+        await this.ensureCatalogItem(user, data.catalogItemId);
+        await this.ensureStockAvailable(tx, user, data.catalogItemId, data.qty);
+      }
       const item = await tx.workOrderItem.create({
         data: {
           tenantId: user.tenantId,
           workOrderId: order.id,
+          catalogItemId: data.catalogItemId ?? null,
           type: data.type,
           name: data.name,
           qty: data.qty,
@@ -183,6 +195,19 @@ export class WorkOrdersService {
           lineTotalCents: lineTotal,
         },
       });
+      if (data.catalogItemId) {
+        await tx.inventoryMovement.create({
+          data: {
+            tenantId: user.tenantId,
+            catalogItemId: data.catalogItemId,
+            type: 'OUT',
+            qty: -data.qty,
+            referenceType: 'WORK_ORDER',
+            referenceId: order.id,
+            createdByUserId: user.sub,
+          },
+        });
+      }
       const totalCents = await this.recalculateTotal(tx, order.id, user);
       return { item, totalCents };
     });
@@ -216,12 +241,91 @@ export class WorkOrdersService {
     if (lineTotal < 0) {
       throw new BadRequestException('Montos invalidos');
     }
+    const nextCatalogItemId =
+      data.catalogItemId ?? existing.catalogItemId ?? undefined;
+    const nextType = data.type ?? existing.type;
+    if (nextCatalogItemId && nextType !== 'PART') {
+      throw new BadRequestException('Solo repuestos pueden usar catálogo');
+    }
 
     const result = await this.prisma.$transaction(async (tx) => {
+      if (existing.catalogItemId) {
+        if (nextCatalogItemId && nextCatalogItemId === existing.catalogItemId) {
+          const delta = qty - existing.qty;
+          if (delta > 0) {
+            await this.ensureStockAvailable(tx, user, nextCatalogItemId, delta);
+            await tx.inventoryMovement.create({
+              data: {
+                tenantId: user.tenantId,
+                catalogItemId: nextCatalogItemId,
+                type: 'OUT',
+                qty: -delta,
+                referenceType: 'WORK_ORDER',
+                referenceId: order.id,
+                createdByUserId: user.sub,
+              },
+            });
+          } else if (delta < 0) {
+            await tx.inventoryMovement.create({
+              data: {
+                tenantId: user.tenantId,
+                catalogItemId: nextCatalogItemId,
+                type: 'IN',
+                qty: Math.abs(delta),
+                referenceType: 'WORK_ORDER',
+                referenceId: order.id,
+                createdByUserId: user.sub,
+              },
+            });
+          }
+        } else {
+          await tx.inventoryMovement.create({
+            data: {
+              tenantId: user.tenantId,
+              catalogItemId: existing.catalogItemId,
+              type: 'IN',
+              qty: existing.qty,
+              referenceType: 'WORK_ORDER',
+              referenceId: order.id,
+              createdByUserId: user.sub,
+            },
+          });
+          if (nextCatalogItemId) {
+            await this.ensureCatalogItem(user, nextCatalogItemId);
+            await this.ensureStockAvailable(tx, user, nextCatalogItemId, qty);
+            await tx.inventoryMovement.create({
+              data: {
+                tenantId: user.tenantId,
+                catalogItemId: nextCatalogItemId,
+                type: 'OUT',
+                qty: -qty,
+                referenceType: 'WORK_ORDER',
+                referenceId: order.id,
+                createdByUserId: user.sub,
+              },
+            });
+          }
+        }
+      } else if (nextCatalogItemId) {
+        await this.ensureCatalogItem(user, nextCatalogItemId);
+        await this.ensureStockAvailable(tx, user, nextCatalogItemId, qty);
+        await tx.inventoryMovement.create({
+          data: {
+            tenantId: user.tenantId,
+            catalogItemId: nextCatalogItemId,
+            type: 'OUT',
+            qty: -qty,
+            referenceType: 'WORK_ORDER',
+            referenceId: order.id,
+            createdByUserId: user.sub,
+          },
+        });
+      }
       const item = await tx.workOrderItem.update({
         where: { id: existing.id },
         data: {
-          type: data.type ?? existing.type,
+          catalogItemId: data.catalogItemId ?? existing.catalogItemId,
+          type: nextType,
           name: data.name ?? existing.name,
           qty,
           unitPriceCents,
@@ -240,6 +344,22 @@ export class WorkOrdersService {
     this.ensureItemEditable(user, order.status);
 
     await this.prisma.$transaction(async (tx) => {
+      const item = await tx.workOrderItem.findFirst({
+        where: { id: itemId, workOrderId: id, tenantId: user.tenantId },
+      });
+      if (item?.catalogItemId) {
+        await tx.inventoryMovement.create({
+          data: {
+            tenantId: user.tenantId,
+            catalogItemId: item.catalogItemId,
+            type: 'IN',
+            qty: item.qty,
+            referenceType: 'WORK_ORDER',
+            referenceId: order.id,
+            createdByUserId: user.sub,
+          },
+        });
+      }
       await tx.workOrderItem.deleteMany({
         where: { id: itemId, workOrderId: id, tenantId: user.tenantId },
       });
@@ -249,7 +369,10 @@ export class WorkOrdersService {
     return { ok: true };
   }
 
-  private ensureItemEditable(user: AccessTokenPayload, status: WorkOrderStatus) {
+  private ensureItemEditable(
+    user: AccessTokenPayload,
+    status: WorkOrderStatus,
+  ) {
     if (status === 'DONE' && user.role !== 'ADMIN') {
       throw new ForbiddenException('Orden cerrada, no editable');
     }
@@ -260,14 +383,25 @@ export class WorkOrdersService {
     workOrderId: string,
     user: AccessTokenPayload,
   ) {
-    const totals = await tx.workOrderItem.aggregate({
+    const items = await tx.workOrderItem.findMany({
       where: {
         workOrderId,
         tenantId: user.tenantId,
       },
-      _sum: { lineTotalCents: true },
+      include: {
+        catalogItem: true,
+      },
     });
-    const totalCents = totals._sum.lineTotalCents ?? 0;
+    const totalCents = items.reduce(
+      (acc, item) => acc + item.lineTotalCents,
+      0,
+    );
+    const costTotalCents = items.reduce((acc, item) => {
+      if (item.type === 'PART' && item.catalogItem?.costCents) {
+        return acc + item.qty * item.catalogItem.costCents;
+      }
+      return acc;
+    }, 0);
     const payments = await tx.payment.aggregate({
       where: { workOrderId, tenantId: user.tenantId },
       _sum: { amountCents: true },
@@ -280,6 +414,7 @@ export class WorkOrdersService {
         : balanceCents === 0
           ? PaymentStatusSchema.enum.PAID
           : PaymentStatusSchema.enum.PARTIAL;
+    const marginCents = totalCents - costTotalCents;
 
     await tx.workOrder.update({
       where: { id: workOrderId },
@@ -288,6 +423,8 @@ export class WorkOrdersService {
         paidTotalCents,
         balanceCents,
         paymentStatus: nextStatus,
+        costTotalCents,
+        marginCents,
       },
     });
     return totalCents;
@@ -335,6 +472,34 @@ export class WorkOrdersService {
     });
     if (!vehicle) {
       throw new NotFoundException('Vehiculo no encontrado');
+    }
+  }
+
+  private async ensureCatalogItem(
+    user: AccessTokenPayload,
+    catalogItemId: string,
+  ) {
+    const item = await this.prisma.catalogItem.findFirst({
+      where: { id: catalogItemId, tenantId: user.tenantId, type: 'PART' },
+    });
+    if (!item) {
+      throw new NotFoundException('Repuesto no encontrado');
+    }
+  }
+
+  private async ensureStockAvailable(
+    tx: Prisma.TransactionClient,
+    user: AccessTokenPayload,
+    catalogItemId: string,
+    qty: number,
+  ) {
+    const current = await tx.inventoryMovement.aggregate({
+      where: { tenantId: user.tenantId, catalogItemId },
+      _sum: { qty: true },
+    });
+    const currentQty = current._sum.qty ?? 0;
+    if (currentQty - qty < 0) {
+      throw new BadRequestException('Stock insuficiente');
     }
   }
 }
