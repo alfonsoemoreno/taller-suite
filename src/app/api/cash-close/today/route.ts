@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 type Totals = {
   cashInCents: number;
@@ -30,21 +30,35 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET() {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
+  if (!user.tenantId) {
+    return NextResponse.json(
+      { message: 'Tenant no configurado.' },
+      { status: 400 },
+    );
+  }
+  const tenantId = user.tenantId;
 
   const today = formatDate(new Date());
   const close = await prisma.cashClose.findFirst({
-    where: { tenantId: session.user.tenantId, date: today },
+    where: { tenantId, date: today },
   });
-  const totals = await computeTotals(session.user, today);
+  const totals = await computeTotals({ ...user, tenantId }, today);
 
   return NextResponse.json({ date: today, close, totals });
 }
 
-async function computeTotals(user: SessionUser, date: string): Promise<Totals> {
+async function computeTotals(
+  user: SessionUser & { tenantId: string },
+  date: string,
+): Promise<Totals> {
   const { start, end } = dateRange(date);
   const payments = await prisma.payment.findMany({
     where: {

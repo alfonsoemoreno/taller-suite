@@ -5,7 +5,7 @@ import { PaymentStatusSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -22,27 +22,31 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  if (session.user.role === 'STAFF') {
+  if (user.role === 'STAFF') {
     return NextResponse.json({ message: 'Sin permisos.' }, { status: 403 });
   }
 
   const payment = await prisma.payment.findFirst({
-    where: { id: params.id, tenantId: session.user.tenantId },
+    where: { id: (await params).id, tenantId: user.tenantId },
   });
   if (!payment) {
     return NextResponse.json({ message: 'Pago no encontrado.' }, { status: 404 });
   }
 
   const order = await prisma.workOrder.findFirst({
-    where: { id: payment.workOrderId, tenantId: session.user.tenantId },
+    where: { id: payment.workOrderId, tenantId: user.tenantId },
   });
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
@@ -52,7 +56,7 @@ export async function DELETE(
     await tx.payment.delete({ where: { id: payment.id } });
 
     const totals = await tx.payment.aggregate({
-      where: { workOrderId: payment.workOrderId, tenantId: session.user.tenantId },
+      where: { workOrderId: payment.workOrderId, tenantId: user.tenantId },
       _sum: { amountCents: true },
     });
     const paidTotalCents = totals._sum.amountCents ?? 0;

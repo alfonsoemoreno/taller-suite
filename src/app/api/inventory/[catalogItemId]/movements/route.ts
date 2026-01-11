@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -21,23 +21,27 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { catalogItemId: string } },
+  { params }: { params: Promise<{catalogItemId: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
   const item = await prisma.catalogItem.findFirst({
-    where: { id: params.catalogItemId, tenantId: session.user.tenantId },
+    where: { id: (await params).catalogItemId, tenantId: user.tenantId },
   });
   if (!item) {
     return NextResponse.json({ message: 'Item no encontrado.' }, { status: 404 });
   }
 
   const movements = await prisma.inventoryMovement.findMany({
-    where: { catalogItemId: params.catalogItemId, tenantId: session.user.tenantId },
+    where: { catalogItemId: (await params).catalogItemId, tenantId: user.tenantId },
     orderBy: { createdAt: 'desc' },
   });
 

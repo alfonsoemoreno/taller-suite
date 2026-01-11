@@ -72,10 +72,14 @@ function AuthContextProvider({ children }: { children: ReactNode }) {
             credentials: 'include',
           });
           if (resp.ok) {
-            const data = (await resp.json()) as
-              | { data?: { access_token?: string } }
-              | { access_token?: string };
-            token = data?.data?.access_token ?? data?.access_token ?? null;
+            const responseData = (await resp.json()) as {
+              data?: { access_token?: string };
+              access_token?: string;
+            };
+            token =
+              responseData.data?.access_token ??
+              responseData.access_token ??
+              null;
           }
         }
       }

@@ -10,7 +10,8 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -19,8 +20,8 @@ export async function GET() {
 
   const customers = await prisma.customer.findMany({
     where: {
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -33,7 +34,8 @@ export async function POST(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -52,8 +54,8 @@ export async function POST(request: Request) {
   const customer = await prisma.customer.create({
     data: {
       ...parsed.data,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
 

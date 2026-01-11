@@ -21,21 +21,25 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const order = await findWorkOrder(session.user, params.id);
+  const order = await findWorkOrder(user, (await params).id);
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
   }
 
   const payments = await prisma.payment.findMany({
-    where: { workOrderId: params.id, tenantId: session.user.tenantId },
+    where: { workOrderId: (await params).id, tenantId: user.tenantId },
     orderBy: { paidAt: 'desc' },
   });
 
@@ -44,15 +48,19 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const order = await findWorkOrder(session.user, params.id);
+  const order = await findWorkOrder(user, (await params).id);
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
   }
@@ -81,18 +89,18 @@ export async function POST(
   const payment = await prisma.$transaction(async (tx) => {
     const created = await tx.payment.create({
       data: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         workOrderId: order.id,
         amountCents: parsed.data.amountCents,
         method: parsed.data.method,
         reference: parsed.data.reference || null,
         paidAt,
-        createdByUserId: session.user.id,
+        createdByUserId: user.id,
       },
     });
 
     const totals = await tx.payment.aggregate({
-      where: { workOrderId: order.id, tenantId: session.user.tenantId },
+      where: { workOrderId: order.id, tenantId: user.tenantId },
       _sum: { amountCents: true },
     });
     const paidTotalCents = totals._sum.amountCents ?? 0;
@@ -115,7 +123,7 @@ export async function POST(
 
     await tx.workOrderEvent.create({
       data: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         workOrderId: order.id,
         type: 'PAYMENT_ADDED',
         payload: {
@@ -123,7 +131,7 @@ export async function POST(
           amountCents: created.amountCents,
           method: created.method,
         },
-        createdByUserId: session.user.id,
+        createdByUserId: user.id,
       },
     });
 

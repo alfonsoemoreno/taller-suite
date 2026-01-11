@@ -7,13 +7,15 @@ export const runtime = 'nodejs';
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -22,9 +24,9 @@ export async function GET(
 
   const customer = await prisma.customer.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
   if (!customer) {
@@ -33,9 +35,9 @@ export async function GET(
 
   const vehicles = await prisma.vehicle.findMany({
     where: {
-      customerId: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      customerId: id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -45,13 +47,15 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -60,9 +64,9 @@ export async function POST(
 
   const customer = await prisma.customer.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
   if (!customer) {
@@ -83,9 +87,9 @@ export async function POST(
     data: {
       ...parsed.data,
       plate,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
-      customerId: params.id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
+      customerId: id,
     },
   });
 

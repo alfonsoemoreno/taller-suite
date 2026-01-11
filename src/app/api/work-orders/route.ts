@@ -29,7 +29,11 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -48,8 +52,8 @@ export async function GET(request: Request) {
 
   const orders = await prisma.workOrder.findMany({
     where: {
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
       status: parsedStatus?.success ? parsedStatus.data : undefined,
       customerId,
       vehicleId,
@@ -66,7 +70,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -81,10 +89,10 @@ export async function POST(request: Request) {
       );
     }
 
-    await ensureCustomer(session.user, parsed.data.customerId);
+    await ensureCustomer(user, parsed.data.customerId);
     if (parsed.data.vehicleId) {
       await ensureVehicle(
-        session.user,
+        user,
         parsed.data.vehicleId,
         parsed.data.customerId,
       );
@@ -92,8 +100,8 @@ export async function POST(request: Request) {
 
     const order = await prisma.workOrder.create({
       data: {
-        tenantId: session.user.tenantId,
-        ownerId: session.user.id,
+        tenantId: user.tenantId,
+        ownerId: user.id,
         customerId: parsed.data.customerId,
         vehicleId: parsed.data.vehicleId ?? null,
         title: parsed.data.title || null,

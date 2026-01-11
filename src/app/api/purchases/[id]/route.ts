@@ -5,7 +5,7 @@ import { PurchaseUpdateSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -29,15 +29,19 @@ async function getPurchase(user: SessionUser, id: string) {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const purchase = await getPurchase(session.user, params.id);
+  const purchase = await getPurchase(user, (await params).id);
   if (!purchase) {
     return NextResponse.json({ message: 'Compra no encontrada.' }, { status: 404 });
   }
@@ -47,10 +51,14 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -64,7 +72,7 @@ export async function PATCH(
     );
   }
 
-  const purchase = await getPurchase(session.user, params.id);
+  const purchase = await getPurchase(user, (await params).id);
   if (!purchase) {
     return NextResponse.json({ message: 'Compra no encontrada.' }, { status: 404 });
   }

@@ -6,7 +6,7 @@ import { UserCreateSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-function ensureTenant(sessionUser: { tenantId: string | null; role: string }) {
+function ensureTenant(sessionUser: { tenantId: string; role: string }) {
   if (!sessionUser.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
@@ -24,14 +24,15 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
+  const user = session.user;
 
-  const guard = ensureTenant(session.user);
+  const guard = ensureTenant(user);
   if (guard) {
     return guard;
   }
 
   const users = await prisma.user.findMany({
-    where: { tenantId: session.user.tenantId },
+    where: { tenantId: user.tenantId },
     select: {
       id: true,
       email: true,
@@ -50,8 +51,9 @@ export async function POST(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
+  const user = session.user;
 
-  const guard = ensureTenant(session.user);
+  const guard = ensureTenant(user);
   if (guard) {
     return guard;
   }
@@ -73,12 +75,12 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  const user = await prisma.user.create({
+  const createdUser = await prisma.user.create({
     data: {
       email: parsed.data.email,
       passwordHash,
       role: parsed.data.role,
-      tenantId: session.user.tenantId,
+      tenantId: user.tenantId,
       isActive: true,
     },
     select: {
@@ -90,5 +92,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json(user, { status: 201 });
+  return NextResponse.json(createdUser, { status: 201 });
 }

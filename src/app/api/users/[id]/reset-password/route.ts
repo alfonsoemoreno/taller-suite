@@ -6,7 +6,7 @@ import { UserResetPasswordSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-function ensureTenant(sessionUser: { tenantId: string | null; role: string }) {
+function ensureTenant(sessionUser: { tenantId: string; role: string }) {
   if (!sessionUser.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
@@ -21,14 +21,15 @@ function ensureTenant(sessionUser: { tenantId: string | null; role: string }) {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
+  const user = session.user;
 
-  const guard = ensureTenant(session.user);
+  const guard = ensureTenant(user);
   if (guard) {
     return guard;
   }
@@ -43,7 +44,7 @@ export async function POST(
   }
 
   const target = await prisma.user.findFirst({
-    where: { id: params.id, tenantId: session.user.tenantId },
+    where: { id: (await params).id, tenantId: user.tenantId },
   });
   if (!target) {
     return NextResponse.json({ message: 'Usuario no encontrado.' }, { status: 404 });

@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@/lib/prisma';
 import type { WorkOrderStatus } from '@/shared';
 import { PaymentStatusSchema } from '@/shared';
 import { prisma } from './prisma';
@@ -6,7 +6,7 @@ import { prisma } from './prisma';
 export type SessionUser = {
   id: string;
   role: string;
-  tenantId: string | null;
+  tenantId: string;
 };
 
 export class ApiError extends Error {

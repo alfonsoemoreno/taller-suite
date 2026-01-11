@@ -29,10 +29,14 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string; itemId: string } },
+  { params }: { params: Promise<{id: string; itemId: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -47,7 +51,7 @@ export async function PATCH(
       );
     }
 
-    const order = await findWorkOrder(session.user, params.id);
+    const order = await findWorkOrder(user, (await params).id);
     if (!order) {
       return NextResponse.json(
         { message: 'Orden no encontrada.' },
@@ -55,13 +59,13 @@ export async function PATCH(
       );
     }
 
-    ensureItemEditable(session.user, order.status);
+    ensureItemEditable(user, order.status);
 
     const existing = await prisma.workOrderItem.findFirst({
       where: {
-        id: params.itemId,
-        workOrderId: params.id,
-        tenantId: session.user.tenantId,
+        id: (await params).itemId,
+        workOrderId: (await params).id,
+        tenantId: user.tenantId,
       },
     });
     if (!existing) {
@@ -90,71 +94,71 @@ export async function PATCH(
         if (nextCatalogItemId && nextCatalogItemId === existing.catalogItemId) {
           const delta = qty - existing.qty;
           if (delta > 0) {
-            await ensureStockAvailable(tx, session.user, nextCatalogItemId, delta);
+            await ensureStockAvailable(tx, user, nextCatalogItemId, delta);
             await tx.inventoryMovement.create({
               data: {
-                tenantId: session.user.tenantId,
+                tenantId: user.tenantId,
                 catalogItemId: nextCatalogItemId,
                 type: 'OUT',
                 qty: -delta,
                 referenceType: 'WORK_ORDER',
                 referenceId: order.id,
-                createdByUserId: session.user.id,
+                createdByUserId: user.id,
               },
             });
           } else if (delta < 0) {
             await tx.inventoryMovement.create({
               data: {
-                tenantId: session.user.tenantId,
+                tenantId: user.tenantId,
                 catalogItemId: nextCatalogItemId,
                 type: 'IN',
                 qty: Math.abs(delta),
                 referenceType: 'WORK_ORDER',
                 referenceId: order.id,
-                createdByUserId: session.user.id,
+                createdByUserId: user.id,
               },
             });
           }
         } else {
           await tx.inventoryMovement.create({
             data: {
-              tenantId: session.user.tenantId,
+              tenantId: user.tenantId,
               catalogItemId: existing.catalogItemId,
               type: 'IN',
               qty: existing.qty,
               referenceType: 'WORK_ORDER',
               referenceId: order.id,
-              createdByUserId: session.user.id,
+              createdByUserId: user.id,
             },
           });
           if (nextCatalogItemId) {
-            await ensureCatalogItem(session.user, nextCatalogItemId);
-            await ensureStockAvailable(tx, session.user, nextCatalogItemId, qty);
+            await ensureCatalogItem(user, nextCatalogItemId);
+            await ensureStockAvailable(tx, user, nextCatalogItemId, qty);
             await tx.inventoryMovement.create({
               data: {
-                tenantId: session.user.tenantId,
+                tenantId: user.tenantId,
                 catalogItemId: nextCatalogItemId,
                 type: 'OUT',
                 qty: -qty,
                 referenceType: 'WORK_ORDER',
                 referenceId: order.id,
-                createdByUserId: session.user.id,
+                createdByUserId: user.id,
               },
             });
           }
         }
       } else if (nextCatalogItemId) {
-        await ensureCatalogItem(session.user, nextCatalogItemId);
-        await ensureStockAvailable(tx, session.user, nextCatalogItemId, qty);
+        await ensureCatalogItem(user, nextCatalogItemId);
+        await ensureStockAvailable(tx, user, nextCatalogItemId, qty);
         await tx.inventoryMovement.create({
           data: {
-            tenantId: session.user.tenantId,
+            tenantId: user.tenantId,
             catalogItemId: nextCatalogItemId,
             type: 'OUT',
             qty: -qty,
             referenceType: 'WORK_ORDER',
             referenceId: order.id,
-            createdByUserId: session.user.id,
+            createdByUserId: user.id,
           },
         });
       }
@@ -171,7 +175,7 @@ export async function PATCH(
         },
       });
 
-      await recalculateTotals(tx, order.id, session.user);
+      await recalculateTotals(tx, order.id, user);
       return item;
     });
 
@@ -186,51 +190,55 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string; itemId: string } },
+  { params }: { params: Promise<{id: string; itemId: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const order = await findWorkOrder(session.user, params.id);
+  const order = await findWorkOrder(user, (await params).id);
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
   }
 
   try {
-    ensureItemEditable(session.user, order.status);
+    ensureItemEditable(user, order.status);
 
     await prisma.$transaction(async (tx) => {
       const item = await tx.workOrderItem.findFirst({
         where: {
-          id: params.itemId,
-          workOrderId: params.id,
-          tenantId: session.user.tenantId,
+          id: (await params).itemId,
+          workOrderId: (await params).id,
+          tenantId: user.tenantId,
         },
       });
       if (item?.catalogItemId) {
         await tx.inventoryMovement.create({
           data: {
-            tenantId: session.user.tenantId,
+            tenantId: user.tenantId,
             catalogItemId: item.catalogItemId,
             type: 'IN',
             qty: item.qty,
             referenceType: 'WORK_ORDER',
             referenceId: order.id,
-            createdByUserId: session.user.id,
+            createdByUserId: user.id,
           },
         });
       }
       await tx.workOrderItem.deleteMany({
         where: {
-          id: params.itemId,
-          workOrderId: params.id,
-          tenantId: session.user.tenantId,
+          id: (await params).itemId,
+          workOrderId: (await params).id,
+          tenantId: user.tenantId,
         },
       });
-      await recalculateTotals(tx, order.id, session.user);
+      await recalculateTotals(tx, order.id, user);
     });
 
     return NextResponse.json({ ok: true });

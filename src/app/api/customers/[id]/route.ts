@@ -7,13 +7,14 @@ export const runtime = 'nodejs';
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -22,9 +23,9 @@ export async function GET(
 
   const customer = await prisma.customer.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id: (await params).id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
   if (!customer) {
@@ -36,13 +37,14 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -60,9 +62,9 @@ export async function PATCH(
 
   const existing = await prisma.customer.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id: (await params).id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
   if (!existing) {
@@ -70,7 +72,7 @@ export async function PATCH(
   }
 
   const customer = await prisma.customer.update({
-    where: { id: params.id },
+    where: { id: (await params).id },
     data: parsed.data,
   });
 
@@ -79,13 +81,14 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -94,16 +97,16 @@ export async function DELETE(
 
   const existing = await prisma.customer.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id: (await params).id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
   if (!existing) {
     return NextResponse.json({ message: 'Cliente no encontrado.' }, { status: 404 });
   }
 
-  await prisma.customer.delete({ where: { id: params.id } });
+  await prisma.customer.delete({ where: { id: (await params).id } });
 
   return NextResponse.json({ ok: true });
 }

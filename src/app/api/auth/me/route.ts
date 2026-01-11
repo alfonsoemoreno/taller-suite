@@ -8,6 +8,7 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
+  const user = session.user;
 
-  return NextResponse.json({ user: session.user });
+  return NextResponse.json({ user: user });
 }

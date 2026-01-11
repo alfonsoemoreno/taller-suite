@@ -7,13 +7,14 @@ export const runtime = 'nodejs';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -31,9 +32,9 @@ export async function PATCH(
 
   const vehicle = await prisma.vehicle.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id: (await params).id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
   if (!vehicle) {
@@ -46,7 +47,7 @@ export async function PATCH(
   };
 
   const updated = await prisma.vehicle.update({
-    where: { id: params.id },
+    where: { id: (await params).id },
     data,
   });
 
@@ -55,13 +56,14 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
-  if (!session.user.tenantId) {
+  const user = session.user;
+  if (!user.tenantId) {
     return NextResponse.json(
       { message: 'Tenant no configurado.' },
       { status: 400 },
@@ -70,16 +72,16 @@ export async function DELETE(
 
   const vehicle = await prisma.vehicle.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id: (await params).id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
   });
   if (!vehicle) {
     return NextResponse.json({ message: 'Vehiculo no encontrado.' }, { status: 404 });
   }
 
-  await prisma.vehicle.delete({ where: { id: params.id } });
+  await prisma.vehicle.delete({ where: { id: (await params).id } });
 
   return NextResponse.json({ ok: true });
 }

@@ -29,10 +29,14 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -47,7 +51,7 @@ export async function POST(
       );
     }
 
-    const order = await findWorkOrder(session.user, params.id);
+    const order = await findWorkOrder(user, (await params).id);
     if (!order) {
       return NextResponse.json(
         { message: 'Orden no encontrada.' },
@@ -55,7 +59,7 @@ export async function POST(
       );
     }
 
-    ensureItemEditable(session.user, order.status);
+    ensureItemEditable(user, order.status);
     if (parsed.data.catalogItemId && parsed.data.type !== 'PART') {
       return NextResponse.json(
         { message: 'Solo repuestos pueden usar catálogo.' },
@@ -69,10 +73,10 @@ export async function POST(
 
     const result = await prisma.$transaction(async (tx) => {
       if (parsed.data.catalogItemId) {
-        await ensureCatalogItem(session.user, parsed.data.catalogItemId);
+        await ensureCatalogItem(user, parsed.data.catalogItemId);
         await ensureStockAvailable(
           tx,
-          session.user,
+          user,
           parsed.data.catalogItemId,
           parsed.data.qty,
         );
@@ -80,7 +84,7 @@ export async function POST(
 
       const item = await tx.workOrderItem.create({
         data: {
-          tenantId: session.user.tenantId,
+          tenantId: user.tenantId,
           workOrderId: order.id,
           catalogItemId: parsed.data.catalogItemId ?? null,
           type: parsed.data.type,
@@ -94,18 +98,18 @@ export async function POST(
       if (parsed.data.catalogItemId) {
         await tx.inventoryMovement.create({
           data: {
-            tenantId: session.user.tenantId,
+            tenantId: user.tenantId,
             catalogItemId: parsed.data.catalogItemId,
             type: 'OUT',
             qty: -parsed.data.qty,
             referenceType: 'WORK_ORDER',
             referenceId: order.id,
-            createdByUserId: session.user.id,
+            createdByUserId: user.id,
           },
         });
       }
 
-      await recalculateTotals(tx, order.id, session.user);
+      await recalculateTotals(tx, order.id, user);
       return item;
     });
 

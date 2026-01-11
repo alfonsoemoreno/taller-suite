@@ -5,7 +5,7 @@ import { PurchaseCreateSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -35,13 +35,17 @@ async function ensureSupplier(user: SessionUser, supplierId: string) {
 
 export async function GET() {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
   const purchases = await prisma.purchase.findMany({
-    where: { tenantId: session.user.tenantId },
+    where: { tenantId: user.tenantId },
     include: { supplier: true },
     orderBy: { createdAt: 'desc' },
   });
@@ -51,7 +55,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -65,14 +73,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const supplierGuard = await ensureSupplier(session.user, parsed.data.supplierId);
+  const supplierGuard = await ensureSupplier(user, parsed.data.supplierId);
   if (supplierGuard) {
     return supplierGuard;
   }
 
   const purchase = await prisma.purchase.create({
     data: {
-      tenantId: session.user.tenantId,
+      tenantId: user.tenantId,
       supplierId: parsed.data.supplierId,
       status: 'DRAFT',
     },

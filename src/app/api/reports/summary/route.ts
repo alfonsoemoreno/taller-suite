@@ -5,7 +5,7 @@ import { PaymentMethodSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 type Summary = {
   range: { from: string; to: string };
@@ -36,7 +36,11 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -58,7 +62,7 @@ export async function GET(request: Request) {
 
     const payments = await prisma.payment.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         method: parsedMethod?.success ? parsedMethod.data : undefined,
         paidAt: {
           gte: start,
@@ -79,7 +83,7 @@ export async function GET(request: Request) {
 
     const orders = await prisma.workOrder.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         createdAt: {
           gte: start,
           lt: end,
@@ -102,7 +106,7 @@ export async function GET(request: Request) {
     const groupedStatus = await prisma.workOrder.groupBy({
       by: ['status'],
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         createdAt: {
           gte: start,
           lt: end,

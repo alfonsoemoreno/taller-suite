@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { VehicleLookupRequestSchema, normalizePlate } from '@/shared';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 

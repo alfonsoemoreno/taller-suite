@@ -5,7 +5,7 @@ import { InventoryAdjustSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -22,7 +22,11 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function POST(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -37,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   const item = await prisma.catalogItem.findFirst({
-    where: { id: parsed.data.catalogItemId, tenantId: session.user.tenantId },
+    where: { id: parsed.data.catalogItemId, tenantId: user.tenantId },
   });
   if (!item) {
     return NextResponse.json({ message: 'Item no encontrado.' }, { status: 404 });
@@ -53,7 +57,7 @@ export async function POST(request: Request) {
   }
 
   const current = await prisma.inventoryMovement.aggregate({
-    where: { tenantId: session.user.tenantId, catalogItemId: item.id },
+    where: { tenantId: user.tenantId, catalogItemId: item.id },
     _sum: { qty: true },
   });
   const currentQty = current._sum.qty ?? 0;
@@ -67,14 +71,14 @@ export async function POST(request: Request) {
 
   const movement = await prisma.inventoryMovement.create({
     data: {
-      tenantId: session.user.tenantId,
+      tenantId: user.tenantId,
       catalogItemId: item.id,
       type: 'ADJUST',
       qty: parsed.data.qty,
       unitCostCents: parsed.data.unitCostCents ?? null,
       referenceType: 'MANUAL',
       referenceId: parsed.data.reason,
-      createdByUserId: session.user.id,
+      createdByUserId: user.id,
     },
   });
 

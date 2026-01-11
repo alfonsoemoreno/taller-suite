@@ -244,9 +244,8 @@ export function ReportsPage() {
                   margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
                   slotProps={{
                     legend: {
-                      direction: 'column',
-                      position: { vertical: 'middle', horizontal: 'right' },
-                      itemGap: 8,
+                      direction: 'vertical',
+                      position: { vertical: 'middle', horizontal: 'end' },
                     },
                   }}
                 />

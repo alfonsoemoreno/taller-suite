@@ -21,21 +21,25 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const order = await findWorkOrder(session.user, params.id);
+  const order = await findWorkOrder(user, (await params).id);
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
   }
 
   const notes = await prisma.workOrderNote.findMany({
-    where: { workOrderId: params.id, tenantId: session.user.tenantId },
+    where: { workOrderId: (await params).id, tenantId: user.tenantId },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -44,15 +48,19 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const order = await findWorkOrder(session.user, params.id);
+  const order = await findWorkOrder(user, (await params).id);
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
   }
@@ -68,10 +76,10 @@ export async function POST(
 
   const note = await prisma.workOrderNote.create({
     data: {
-      tenantId: session.user.tenantId,
-      workOrderId: params.id,
+      tenantId: user.tenantId,
+      workOrderId: (await params).id,
       note: parsed.data.note,
-      createdByUserId: session.user.id,
+      createdByUserId: user.id,
     },
   });
 

@@ -5,7 +5,7 @@ import { SupplierCreateSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -22,13 +22,17 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET() {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
   const suppliers = await prisma.supplier.findMany({
-    where: { tenantId: session.user.tenantId },
+    where: { tenantId: user.tenantId },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -37,7 +41,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -53,7 +61,7 @@ export async function POST(request: Request) {
 
   const supplier = await prisma.supplier.create({
     data: {
-      tenantId: session.user.tenantId,
+      tenantId: user.tenantId,
       name: parsed.data.name,
       email: parsed.data.email || null,
       phone: parsed.data.phone || null,

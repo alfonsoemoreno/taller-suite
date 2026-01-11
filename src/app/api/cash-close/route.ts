@@ -5,7 +5,7 @@ import { CashCloseCreateSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 type Totals = {
   cashInCents: number;
@@ -31,11 +31,20 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
-
+  if (!user.tenantId) {
+    return NextResponse.json(
+      { message: 'Tenant no configurado.' },
+      { status: 400 },
+    );
+  }
   const { searchParams } = new URL(request.url);
   const from = searchParams.get('from') ?? undefined;
   const to = searchParams.get('to') ?? undefined;
@@ -47,9 +56,11 @@ export async function GET(request: Request) {
     );
   }
 
+  const tenantId = user.tenantId;
+
   const closes = await prisma.cashClose.findMany({
     where: {
-      tenantId: session.user.tenantId,
+      tenantId,
       date: {
         gte: from,
         lte: to,
@@ -63,10 +74,21 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
+  if (!user.tenantId) {
+    return NextResponse.json(
+      { message: 'Tenant no configurado.' },
+      { status: 400 },
+    );
+  }
+  const tenantId = user.tenantId;
 
   const payload = await request.json();
   const parsed = CashCloseCreateSchema.safeParse(payload);
@@ -83,7 +105,7 @@ export async function POST(request: Request) {
   }
 
   const existing = await prisma.cashClose.findFirst({
-    where: { tenantId: session.user.tenantId, date },
+    where: { tenantId, date },
   });
   if (existing) {
     return NextResponse.json(
@@ -92,24 +114,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const totals = await computeTotals(session.user, date);
+  const totals = await computeTotals({ ...user, tenantId }, date);
 
   const close = await prisma.cashClose.create({
     data: {
-      tenantId: session.user.tenantId,
+      tenantId,
       date,
       cashInCents: totals.cashInCents,
       cardInCents: totals.cardInCents,
       transferInCents: totals.transferInCents,
       notes: parsed.data.notes || null,
-      createdByUserId: session.user.id,
+      createdByUserId: user.id,
     },
   });
 
   return NextResponse.json(close, { status: 201 });
 }
 
-async function computeTotals(user: SessionUser, date: string): Promise<Totals> {
+async function computeTotals(
+  user: SessionUser & { tenantId: string },
+  date: string,
+): Promise<Totals> {
   const { start, end } = dateRange(date);
   const payments = await prisma.payment.findMany({
     where: {

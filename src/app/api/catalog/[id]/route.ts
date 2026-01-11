@@ -5,7 +5,7 @@ import { CatalogItemUpdateSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -22,13 +22,18 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  const user = session?.user as SessionUser | undefined;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
+  if (!user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const tenantId = user.tenantId;
 
   const payload = await request.json();
   const parsed = CatalogItemUpdateSchema.safeParse(payload);
@@ -40,7 +45,7 @@ export async function PATCH(
   }
 
   const item = await prisma.catalogItem.findFirst({
-    where: { id: params.id, tenantId: session.user.tenantId },
+    where: { id: (await params).id, tenantId },
   });
   if (!item) {
     return NextResponse.json({ message: 'Item no encontrado.' }, { status: 404 });
@@ -75,16 +80,21 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  const user = session?.user as SessionUser | undefined;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
+  if (!user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const tenantId = user.tenantId;
 
   const item = await prisma.catalogItem.findFirst({
-    where: { id: params.id, tenantId: session.user.tenantId },
+    where: { id: (await params).id, tenantId },
   });
   if (!item) {
     return NextResponse.json({ message: 'Item no encontrado.' }, { status: 404 });

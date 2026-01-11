@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -21,19 +21,23 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET() {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
   const items = await prisma.catalogItem.findMany({
-    where: { tenantId: session.user.tenantId, type: 'PART' },
+    where: { tenantId: user.tenantId, type: 'PART' },
     orderBy: { name: 'asc' },
   });
 
   const movements = await prisma.inventoryMovement.groupBy({
     by: ['catalogItemId'],
-    where: { tenantId: session.user.tenantId },
+    where: { tenantId: user.tenantId },
     _sum: { qty: true },
   });
 

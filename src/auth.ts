@@ -6,7 +6,7 @@ export type SessionUser = {
   id: string;
   email: string;
   role: 'OWNER' | 'ADMIN' | 'STAFF';
-  tenantId: string | null;
+  tenantId: string;
 };
 
 type AuthSession = {
@@ -68,7 +68,7 @@ export async function getAuthSession(): Promise<AuthSession | null> {
       id: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId,
+      tenantId: user.tenantId ?? user.id,
     },
   };
 }

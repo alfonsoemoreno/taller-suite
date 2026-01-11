@@ -27,19 +27,23 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
   const order = await prisma.workOrder.findFirst({
     where: {
-      id: params.id,
-      tenantId: session.user.tenantId,
-      ownerId: session.user.id,
+      id: (await params).id,
+      tenantId: user.tenantId,
+      ownerId: user.id,
     },
     include: {
       customer: true,
@@ -57,10 +61,14 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -75,7 +83,7 @@ export async function PATCH(
       );
     }
 
-    const order = await findWorkOrder(session.user, params.id);
+    const order = await findWorkOrder(user, (await params).id);
     if (!order) {
       return NextResponse.json(
         { message: 'Orden no encontrada.' },
@@ -84,11 +92,11 @@ export async function PATCH(
     }
 
     if (parsed.data.customerId && parsed.data.customerId !== order.customerId) {
-      await ensureCustomer(session.user, parsed.data.customerId);
+      await ensureCustomer(user, parsed.data.customerId);
     }
     if (parsed.data.vehicleId) {
       await ensureVehicle(
-        session.user,
+        user,
         parsed.data.vehicleId,
         parsed.data.customerId ?? order.customerId,
       );
@@ -122,15 +130,19 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const order = await findWorkOrder(session.user, params.id);
+  const order = await findWorkOrder(user, (await params).id);
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
   }

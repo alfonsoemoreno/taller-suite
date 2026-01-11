@@ -20,24 +20,28 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string; noteId: string } },
+  { params }: { params: Promise<{id: string; noteId: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
-  const order = await findWorkOrder(session.user, params.id);
+  const order = await findWorkOrder(user, (await params).id);
   if (!order) {
     return NextResponse.json({ message: 'Orden no encontrada.' }, { status: 404 });
   }
 
   await prisma.workOrderNote.deleteMany({
     where: {
-      id: params.noteId,
-      workOrderId: params.id,
-      tenantId: session.user.tenantId,
+      id: (await params).noteId,
+      workOrderId: (await params).id,
+      tenantId: user.tenantId,
     },
   });
 

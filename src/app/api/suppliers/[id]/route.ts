@@ -5,7 +5,7 @@ import { SupplierUpdateSchema } from '@/shared';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -22,10 +22,14 @@ function requireSession(sessionUser: SessionUser | undefined) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -40,7 +44,7 @@ export async function PATCH(
   }
 
   const supplier = await prisma.supplier.findFirst({
-    where: { id: params.id, tenantId: session.user.tenantId },
+    where: { id: (await params).id, tenantId: user.tenantId },
   });
   if (!supplier) {
     return NextResponse.json(
@@ -64,16 +68,20 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
 
   const supplier = await prisma.supplier.findFirst({
-    where: { id: params.id, tenantId: session.user.tenantId },
+    where: { id: (await params).id, tenantId: user.tenantId },
   });
   if (!supplier) {
     return NextResponse.json(

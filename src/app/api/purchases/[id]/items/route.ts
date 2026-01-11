@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { PurchaseItemCreateSchema } from '@/shared';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 
-type SessionUser = { id: string; role: string; tenantId: string | null };
+type SessionUser = { id: string; role: string; tenantId: string };
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
@@ -41,10 +41,14 @@ async function recalculateTotal(tx: Prisma.TransactionClient, purchaseId: string
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{id: string}> },
 ) {
   const session = await getAuthSession();
-  const guard = requireSession(session?.user as SessionUser | undefined);
+  if (!session?.user) {
+    return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
+  }
+  const user = session.user;
+  const guard = requireSession(user);
   if (guard) {
     return guard;
   }
@@ -58,7 +62,7 @@ export async function POST(
     );
   }
 
-  const purchase = await getPurchase(session.user, params.id);
+  const purchase = await getPurchase(user, (await params).id);
   if (!purchase) {
     return NextResponse.json({ message: 'Compra no encontrada.' }, { status: 404 });
   }
@@ -72,7 +76,7 @@ export async function POST(
   const item = await prisma.catalogItem.findFirst({
     where: {
       id: parsed.data.catalogItemId,
-      tenantId: session.user.tenantId,
+      tenantId: user.tenantId,
       type: 'PART',
     },
   });
