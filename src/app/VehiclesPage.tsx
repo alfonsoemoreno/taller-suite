@@ -24,7 +24,7 @@ import {
   VehicleCreateSchema,
   VehicleUpdateSchema,
   normalizePlate,
-} from '@taller/shared';
+} from '@/shared';
 import { useAuth } from '../auth/AuthContext';
 import { PlateScanner } from '../components/PlateScanner';
 import { PageHeader } from '../components/ui/PageHeader';

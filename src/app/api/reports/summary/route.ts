@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { PaymentMethodSchema } from '@taller/shared';
+import { PaymentMethodSchema } from '@/shared';
 
 type SessionUser = { id: string; role: string; tenantId: string | null };
 

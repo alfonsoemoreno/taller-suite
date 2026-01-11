@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { VehicleLookupRequestSchema, normalizePlate } from '@taller/shared';
+import { VehicleLookupRequestSchema, normalizePlate } from '@/shared';
 import type { Prisma } from '@prisma/client';
 
 const CACHE_TTL_DAYS = 30;

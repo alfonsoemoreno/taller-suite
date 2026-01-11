@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { CustomerUpdateSchema } from '@taller/shared';
+import { CustomerUpdateSchema } from '@/shared';
 
 export async function GET(
   _request: Request,

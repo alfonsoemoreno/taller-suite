@@ -9,7 +9,7 @@ import {
   CircularProgress,
   TextField,
 } from '@mui/material';
-import { CustomerUpdateSchema } from '@taller/shared';
+import { CustomerUpdateSchema } from '@/shared';
 import { useAuth } from '../auth/AuthContext';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';

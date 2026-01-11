@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { PaymentCreateSchema, PaymentStatusSchema } from '@taller/shared';
+import { PaymentCreateSchema, PaymentStatusSchema } from '@/shared';
 import { findWorkOrder, type SessionUser } from '@/lib/work-orders';
 
 function requireSession(sessionUser: SessionUser | undefined) {

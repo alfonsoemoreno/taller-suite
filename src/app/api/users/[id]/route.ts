@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { UserUpdateSchema } from '@taller/shared';
+import { UserUpdateSchema } from '@/shared';
 
 function ensureTenant(sessionUser: { tenantId: string | null; role: string }) {
   if (!sessionUser.tenantId) {

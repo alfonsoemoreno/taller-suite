@@ -8,7 +8,7 @@ import {
   findWorkOrder,
   type SessionUser,
 } from '@/lib/work-orders';
-import { WorkOrderUpdateSchema } from '@taller/shared';
+import { WorkOrderUpdateSchema } from '@/shared';
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { VehicleUpdateSchema, normalizePlate } from '@taller/shared';
+import { VehicleUpdateSchema, normalizePlate } from '@/shared';
 
 export async function PATCH(
   request: Request,

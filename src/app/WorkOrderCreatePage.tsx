@@ -10,7 +10,7 @@ import {
   TextField,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import { WorkOrderCreateSchema } from '@taller/shared';
+import { WorkOrderCreateSchema } from '@/shared';
 import { useAuth } from '../auth/AuthContext';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';

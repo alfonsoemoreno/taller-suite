@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { UserResetPasswordSchema } from '@taller/shared';
+import { UserResetPasswordSchema } from '@/shared';
 
 function ensureTenant(sessionUser: { tenantId: string | null; role: string }) {
   if (!sessionUser.tenantId) {

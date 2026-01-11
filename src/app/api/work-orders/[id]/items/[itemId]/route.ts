@@ -10,7 +10,7 @@ import {
   recalculateTotals,
   type SessionUser,
 } from '@/lib/work-orders';
-import { WorkOrderItemUpdateSchema } from '@taller/shared';
+import { WorkOrderItemUpdateSchema } from '@/shared';
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {

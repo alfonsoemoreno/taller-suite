@@ -8,7 +8,7 @@ import {
   Divider,
   Typography,
 } from '@mui/material';
-import type { WorkOrderStatus } from '@taller/shared';
+import type { WorkOrderStatus } from '@/shared';
 import { useAuth } from '../auth/AuthContext';
 
 type Customer = {

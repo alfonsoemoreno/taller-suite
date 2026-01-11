@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { PurchaseItemCreateSchema } from '@taller/shared';
+import { PurchaseItemCreateSchema } from '@/shared';
 import type { Prisma } from '@prisma/client';
 
 type SessionUser = { id: string; role: string; tenantId: string | null };

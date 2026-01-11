@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
-import type { WorkOrderStatus } from '@taller/shared';
-import { PaymentStatusSchema } from '@taller/shared';
+import type { WorkOrderStatus } from '@/shared';
+import { PaymentStatusSchema } from '@/shared';
 import { prisma } from './prisma';
 
 export type SessionUser = {

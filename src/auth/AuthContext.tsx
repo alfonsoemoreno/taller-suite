@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { SessionProvider, signIn, signOut, useSession } from 'next-auth/react';
-import type { AuthUser } from '@taller/shared';
+import type { AuthUser } from '@/shared';
 import { getApiBaseUrl, parseApiError } from '../lib/api';
 
 type AuthContextValue = {

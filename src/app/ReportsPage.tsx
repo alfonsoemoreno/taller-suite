@@ -20,7 +20,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { FormRow } from '../components/ui/FormRow';
 import { usePageTitle } from '../hooks/usePageTitle';
-import type { PaymentMethod } from '@taller/shared';
+import type { PaymentMethod } from '@/shared';
 import { DataTable } from '../components/ui/DataTable';
 
 type SummaryResponse = {

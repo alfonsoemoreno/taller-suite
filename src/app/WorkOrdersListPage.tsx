@@ -19,7 +19,7 @@ import { Panel } from '../components/ui/Panel';
 import { EmptyState } from '../components/ui/EmptyState';
 import { DataTable } from '../components/ui/DataTable';
 import { usePageTitle } from '../hooks/usePageTitle';
-import type { WorkOrderStatus } from '@taller/shared';
+import type { WorkOrderStatus } from '@/shared';
 
 type Customer = {
   id: string;

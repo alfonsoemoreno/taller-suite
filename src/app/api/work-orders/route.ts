@@ -10,7 +10,7 @@ import {
 import {
   WorkOrderCreateSchema,
   WorkOrderStatusSchema,
-} from '@taller/shared';
+} from '@/shared';
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {

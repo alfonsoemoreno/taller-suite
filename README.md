@@ -1,6 +1,6 @@
 # Taller Suite
 
-Suite de gestion de taller (ordenes de trabajo, clientes, vehiculos, inventario y pagos) construida en Next.js (App Router) con API Routes y un paquete compartido de tipos/validaciones.
+Suite de gestion de taller (ordenes de trabajo, clientes, vehiculos, inventario y pagos) construida en Next.js (App Router) con API Routes y tipos/validaciones internos.
 
 ## Contenido
 
@@ -18,7 +18,7 @@ Suite de gestion de taller (ordenes de trabajo, clientes, vehiculos, inventario 
 ## Estructura
 
 ```
-packages/
+src/
   shared/         # Tipos y utilidades compartidas
 ```
 
@@ -88,7 +88,7 @@ npx prisma generate --schema prisma/schema.prisma
 
 ### Raiz
 
-- `npm run dev`: build de `@taller/shared` + Next.js dev server
+- `npm run dev`: Next.js dev server
 - `npm run build`: build de todos los workspaces
 - `npm run lint`: lint de todos los workspaces
 
@@ -102,7 +102,7 @@ npx prisma generate --schema prisma/schema.prisma
 
 ## Paquete compartido
 
-`@taller/shared` expone tipos y utilidades usados por la API y el frontend. Se compila a `packages/shared/dist` y se importa como dependencia normal en ambos apps.
+Los tipos y utilidades compartidas viven en `src/shared` y se importan con alias `@/shared`.
 
 ## Tests y calidad
 

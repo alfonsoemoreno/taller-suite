@@ -27,7 +27,7 @@ import {
   type WorkOrderStatus,
   PaymentCreateSchema,
   type PaymentMethod,
-} from '@taller/shared';
+} from '@/shared';
 import { useAuth } from '../auth/AuthContext';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';

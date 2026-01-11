@@ -12,7 +12,7 @@ import {
   extractPlateCandidates,
   isValidChileanPlate,
   normalizePlate,
-} from '@taller/shared';
+} from '@/shared';
 
 type RoiRect = {
   x: number;

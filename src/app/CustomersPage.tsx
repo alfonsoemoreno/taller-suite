@@ -16,7 +16,7 @@ import {
   TableCell,
   TableRow,
 } from '@mui/material';
-import { CustomerCreateSchema, CustomerUpdateSchema } from '@taller/shared';
+import { CustomerCreateSchema, CustomerUpdateSchema } from '@/shared';
 import { useAuth } from '../auth/AuthContext';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '../components/ui/PageHeader';

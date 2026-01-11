@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { findWorkOrder, type SessionUser } from '@/lib/work-orders';
-import { WorkOrderNoteCreateSchema } from '@taller/shared';
+import { WorkOrderNoteCreateSchema } from '@/shared';
 
 function requireSession(sessionUser: SessionUser | undefined) {
   if (!sessionUser) {
