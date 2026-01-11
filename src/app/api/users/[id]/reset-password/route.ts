@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { UserResetPasswordSchema } from '@/shared';
 
@@ -21,7 +21,7 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }

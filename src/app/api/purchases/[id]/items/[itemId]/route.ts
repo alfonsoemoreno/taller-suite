@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 
@@ -40,7 +40,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: { id: string; itemId: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;

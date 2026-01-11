@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import {
   ApiError,
@@ -27,7 +27,7 @@ export async function GET(
   _request: Request,
   { params }: { params: { id: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;
@@ -57,7 +57,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;
@@ -122,7 +122,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: { id: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;

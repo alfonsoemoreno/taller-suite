@@ -1,4 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { createRequire } from 'node:module';
+
+process.env.PRISMA_CLIENT_ENGINE_TYPE = 'binary';
+
+const require = createRequire(import.meta.url);
+const { PrismaClient } = require('@prisma/client') as typeof import('@prisma/client');
 
 const globalForPrisma = global as typeof global & { prisma?: PrismaClient };
 

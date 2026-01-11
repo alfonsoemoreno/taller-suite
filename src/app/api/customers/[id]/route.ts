@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { CustomerUpdateSchema } from '@/shared';
 
@@ -7,7 +7,7 @@ export async function GET(
   _request: Request,
   { params }: { params: { id: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
@@ -36,7 +36,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
@@ -79,7 +79,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: { id: string } },
 ) {
-  const session = await auth();
+  const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }

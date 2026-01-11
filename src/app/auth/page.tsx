@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export default function Login() {
+export default function AuthIndex() {
   redirect('/auth/sign-in');
 }

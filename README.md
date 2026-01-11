@@ -24,7 +24,7 @@ src/
 
 ## Stack
 
-- Backend: Next.js API Routes, Prisma, PostgreSQL, Auth.js, Zod
+- Backend: Next.js API Routes, Prisma, PostgreSQL, Neon Auth, Zod
 - Frontend: React, Next.js App Router, MUI, Emotion
 - Monorepo: npm workspaces
 
@@ -57,11 +57,11 @@ Opcionales:
 ```
 DATABASE_URL=
 SHADOW_DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
 NEON_AUTH_ISSUER=
 NEON_AUTH_CLIENT_ID=
 NEON_AUTH_CLIENT_SECRET=
+NEON_AUTH_JWKS_URL=
+NEXT_PUBLIC_NEON_AUTH_URL=
 GETAPI_KEY=
 NEXT_PUBLIC_API_BASE_URL=/api
 ```

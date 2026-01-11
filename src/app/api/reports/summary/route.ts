@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { PaymentMethodSchema } from '@/shared';
 
@@ -33,7 +33,7 @@ function requireSession(sessionUser: SessionUser | undefined) {
 }
 
 export async function GET(request: Request) {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { UserCreateSchema } from '@/shared';
 
@@ -18,7 +18,7 @@ function ensureTenant(sessionUser: { tenantId: string | null; role: string }) {
 }
 
 export async function GET() {
-  const session = await auth();
+  const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }
@@ -44,7 +44,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ message: 'No autorizado.' }, { status: 401 });
   }

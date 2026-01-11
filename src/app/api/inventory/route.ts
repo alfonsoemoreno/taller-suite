@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
 type SessionUser = { id: string; role: string; tenantId: string | null };
@@ -18,7 +18,7 @@ function requireSession(sessionUser: SessionUser | undefined) {
 }
 
 export async function GET() {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;

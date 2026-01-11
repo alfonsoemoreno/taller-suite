@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getAuthSession } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { PurchaseCreateSchema } from '@/shared';
 
@@ -32,7 +32,7 @@ async function ensureSupplier(user: SessionUser, supplierId: string) {
 }
 
 export async function GET() {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;
@@ -48,7 +48,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await getAuthSession();
   const guard = requireSession(session?.user as SessionUser | undefined);
   if (guard) {
     return guard;
