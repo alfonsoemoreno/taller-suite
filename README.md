@@ -1,6 +1,6 @@
 # Taller Suite
 
-Monorepo para una suite de gestion de taller (ordenes de trabajo, clientes, vehiculos, inventario y pagos) con API en NestJS y frontend React. Usa npm workspaces y un paquete compartido para tipos/validaciones.
+Suite de gestion de taller (ordenes de trabajo, clientes, vehiculos, inventario y pagos) construida en Next.js (App Router) con API Routes y un paquete compartido de tipos/validaciones.
 
 ## Contenido
 
@@ -18,17 +18,14 @@ Monorepo para una suite de gestion de taller (ordenes de trabajo, clientes, vehi
 ## Estructura
 
 ```
-apps/
-  api/            # API NestJS
-  web/            # Frontend React + Vite
 packages/
   shared/         # Tipos y utilidades compartidas
 ```
 
 ## Stack
 
-- Backend: NestJS, Prisma, PostgreSQL, JWT, Zod
-- Frontend: React, Vite, React Router, MUI, Emotion
+- Backend: Next.js API Routes, Prisma, PostgreSQL, Auth.js, Zod
+- Frontend: React, Next.js App Router, MUI, Emotion
 - Monorepo: npm workspaces
 
 ## Requisitos
@@ -46,8 +43,7 @@ npm install
 
 2) Configura variables de entorno:
 
-- `apps/api/.env`
-- `apps/web/.env`
+- `.env`
 
 3) Levanta todo en modo desarrollo:
 
@@ -57,36 +53,22 @@ npm run dev
 
 Opcionales:
 
-```bash
-npm run dev:api
-npm run dev:web
-```
-
 ## Variables de entorno
-
-### API (`apps/api/.env`)
-
 ```
 DATABASE_URL=
 SHADOW_DATABASE_URL=
-JWT_ACCESS_SECRET=
-JWT_REFRESH_SECRET=
-JWT_ACCESS_TTL=15m
-JWT_REFRESH_TTL=30d
-BCRYPT_SALT_ROUNDS=10
-FRONTEND_URL=http://localhost:5173
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
+NEON_AUTH_ISSUER=
+NEON_AUTH_CLIENT_ID=
+NEON_AUTH_CLIENT_SECRET=
 GETAPI_KEY=
-```
-
-### Web (`apps/web/.env`)
-
-```
-VITE_API_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_API_BASE_URL=/api
 ```
 
 ## Base de datos y Prisma
 
-El esquema vive en `apps/api/prisma/schema.prisma` y modela entidades como:
+El esquema vive en `prisma/schema.prisma` y modela entidades como:
 
 - usuarios y autenticacion por roles
 - clientes y vehiculos
@@ -98,32 +80,21 @@ El esquema vive en `apps/api/prisma/schema.prisma` y modela entidades como:
 Si necesitas correr migraciones o generar el cliente:
 
 ```bash
-npx prisma migrate dev --schema apps/api/prisma/schema.prisma
-npx prisma generate --schema apps/api/prisma/schema.prisma
+npx prisma migrate dev --schema prisma/schema.prisma
+npx prisma generate --schema prisma/schema.prisma
 ```
 
 ## Scripts
 
 ### Raiz
 
-- `npm run dev`: build de `@taller/shared` + API y Web en paralelo
-- `npm run dev:api`: API en dev
-- `npm run dev:web`: Web en dev
+- `npm run dev`: build de `@taller/shared` + Next.js dev server
 - `npm run build`: build de todos los workspaces
 - `npm run lint`: lint de todos los workspaces
 
-### API (`apps/api`)
-
-- `npm run dev`: API en watch mode (incluye build de shared)
-- `npm run build`: build de NestJS
-- `npm run start:prod`: ejecutar build
-- `npm run test`: Jest
-
-### Web (`apps/web`)
-
-- `npm run dev`: Vite dev server
-- `npm run build`: build de TypeScript + Vite
-- `npm run preview`: previsualizar build
+- `npm run dev`: Next.js dev server
+- `npm run build`: build de Next.js
+- `npm run start`: ejecutar build
 
 ### Shared (`packages/shared`)
 
@@ -136,7 +107,7 @@ npx prisma generate --schema apps/api/prisma/schema.prisma
 ## Tests y calidad
 
 - Lint global: `npm run lint`
-- Tests API: `npm run test -w apps/api`
+- Tests API: pendientes
 
 ## Deploy
 
@@ -148,6 +119,5 @@ npm run build
 
 Luego:
 
-- API: `npm run start:prod -w apps/api`
-- Web: servir `apps/web/dist` con tu servidor estatico preferido
+- Web/API: `npm run start`
 ## Estructura
