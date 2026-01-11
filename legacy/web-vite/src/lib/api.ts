@@ -4,7 +4,7 @@ export type ApiError = {
 };
 
 export const getApiBaseUrl = () =>
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api';
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
 export async function parseApiError(response: Response): Promise<ApiError> {
   let message = response.statusText || 'Error inesperado';
