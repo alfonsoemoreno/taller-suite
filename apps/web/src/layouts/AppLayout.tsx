@@ -149,6 +149,11 @@ function AppSidebar() {
         to: '/app/inventory',
         icon: <AssignmentOutlinedIcon fontSize="small" />,
       },
+      {
+        label: 'Compras',
+        to: '/app/purchases',
+        icon: <AssignmentOutlinedIcon fontSize="small" />,
+      },
     ],
     [],
   );
